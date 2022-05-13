@@ -10,6 +10,9 @@ using namespace std;
 
 #include <stdio.h>
 
+#define globA(x, y) A[x*N + y]
+#define globA(x, y) A[x*N + y]
+
 //__global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B)
 //{
 //
@@ -47,8 +50,26 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 
 	for (int kk = 0; kk < N/TW; kk++){
 	
-		As[ty][tx] = A[I*N + kk*TW + tx];	
-		Bs[ty][tx] = B[(kk*TW+ty)*N + J];
+		if (I < N && (kk*TW + tx) < N);
+		{
+			//As[ty][tx] = A[I*N + kk*TW + tx];	
+			//Bs[ty][tx] = B[(kk*TW+ty)*N + J];
+			As[ty][tx] = globA(I, (kk*TW + tx));
+		}
+		else
+		{
+			As[ty][tx] = 0;
+		}
+
+		if (J < N && (kk*TW + ty) < N);
+		{
+			Bs[ty][tx] = globB((kk*TW + ty), J);
+		}
+		else
+		{
+			Bs[ty][tx] = 0;
+		}
+		
 		__syncthreads();
 
 		for (int k = 0; k < TW; k++)
