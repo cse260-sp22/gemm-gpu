@@ -11,7 +11,7 @@ using namespace std;
 #include <stdio.h>
 
 #define globA(x, y) A[x*N + y]
-#define globA(x, y) A[x*N + y]
+#define globB(x, y) A[x*N + y]
 
 //__global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B)
 //{
@@ -48,16 +48,12 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 
 	double Cij = 0;
 
-	for (int kk = 0; kk < N/TW; kk++){
+	for (int kk = 0; kk < (N + TW - 1)/TW; kk++){
 	
-		if (I < N && (kk*TW + tx) < N)
-		{
-			//As[ty][tx] = A[I*N + kk*TW + tx];	
-			//Bs[ty][tx] = B[(kk*TW+ty)*N + J];
+		if (I < N && (kk*TW + tx) < N){
 			As[ty][tx] = globA(I, (kk*TW + tx));
 		}
-		else
-		{
+		else {
 			As[ty][tx] = 0;
 		}
 
@@ -65,19 +61,19 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 		{
 			Bs[ty][tx] = globB((kk*TW + ty), J);
 		}
-		else
-		{
+		else {
 			Bs[ty][tx] = 0;
 		}
 		
 		__syncthreads();
 
-		for (int k = 0; k < TW; k++)
-				Cij += As[ty][k] * Bs[k][tx];
+		for (int k = 0; k < TW; k++){
+			Cij += As[ty][k] * Bs[k][tx];
+		}
 		__syncthreads();
 	}
 
-	if (I < N && J < N)
-	C[I*N + J] = Cij;
-
+	if (I < N && J < N){
+		C[I*N + J] = Cij;
+	}
 }
