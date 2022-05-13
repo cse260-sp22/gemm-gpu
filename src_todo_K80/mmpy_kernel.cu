@@ -50,7 +50,7 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 
 	for (int kk = 0; kk < N/TW; kk++){
 	
-		if (I < N && (kk*TW + tx) < N);
+		if (I < N && (kk*TW + tx) < N)
 		{
 			//As[ty][tx] = A[I*N + kk*TW + tx];	
 			//Bs[ty][tx] = B[(kk*TW+ty)*N + J];
@@ -61,7 +61,7 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 			As[ty][tx] = 0;
 		}
 
-		if (J < N && (kk*TW + ty) < N);
+		if (J < N && (kk*TW + ty) < N)
 		{
 			Bs[ty][tx] = globB((kk*TW + ty), J);
 		}
@@ -77,6 +77,7 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 		__syncthreads();
 	}
 
+	if (I < N && J < N)
 	C[I*N + J] = Cij;
 
 }
