@@ -45,17 +45,26 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 
 	double Cij = 0;
 
-	for (int kk = 0; kk < N/TW; kk++){
+	for (int kk = 0; kk < (N+TW-1)/TW; kk++){
 	
-		As[ty][tx] = A[I*N + kk*TW + tx];	
-		Bs[ty][tx] = B[(kk*TW+ty)*N + J];
+		if (I < N && (kk*TW + tx) < N){
+			As[ty][tx] = A[I*N + kk*TW + tx];
+		}
+		else As[ty][tx] = 0;
+
+		if ((kk*TW + ty) < N && J < N){
+			Bs[ty][tx] = B[(kk*TW+ty)*N + J];
+		}
+		else Bs[ty][tx] = 0;
+		
 		__syncthreads();
 
 		for (int k = 0; k < TW; k++)
-				Cij += As[ty][k] * Bs[k][tx];
+			Cij += As[ty][k] * Bs[k][tx];
 		__syncthreads();
 	}
 
-	C[I*N + J] = Cij;
+	if (I < N && J < N)
+		C[I*N + J] = Cij;
 
 }
