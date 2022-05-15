@@ -15,6 +15,8 @@ using namespace std;
 #define globA(x, y) A[x*N + y]
 #define globB(x, y) A[x*N + y]
 
+#define load_w_zero_padding(matrix, i, j, N)((i) < N && (j) < N ? (matrix[i * N + j]) : 0)
+
 //__global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B)
 //{
 //
@@ -129,21 +131,74 @@ __global__ void matMul_naive_naive(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B)
 	}
 }
 
-__global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B) {
-	for(int mb = 0; mb < N; mb += MTILE) {
-		for(int nb = 0; nb < N; nb += NTILE) {
-			for(int kb = 0; kb < N; kb += KTILE) {
-				// compute MTILE * NTILE * KTILE matrix product
-				for(int k = 0; k < KTILE; k++) {
-					for(int i = 0; i < MTILE; i++) {
-						for(int j = 0; j < NTILE; j++) {
-							int r = mb + i;
-							int c = nb + j;
+// __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B) {
+// 	for(int mb = 0; mb < N; mb += MTILE) {
+// 		for(int nb = 0; nb < N; nb += NTILE) {
+// 			for(int kb = 0; kb < N; kb += KTILE) {
+// 				// compute MTILE * NTILE * KTILE matrix product
+// 				for(int k = 0; k < KTILE; k++) {
+// 					for(int i = 0; i < MTILE; i++) {
+// 						for(int j = 0; j < NTILE; j++) {
+// 							int r = mb + i;
+// 							int c = nb + j;
 
-							C[r * N + c] += A[r * N + (kb + k)] * B[(kb + k) * N + c];
-						}
-					}
+// 							C[r * N + c] += A[r * N + (kb + k)] * B[(kb + k) * N + c];
+// 						}
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// }
+
+__global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B) {
+	__shared__ _DOUBLE_ As[BLOCK_M][BLOCK_K];
+	__shared__ _DOUBLE_ Bs[BLOCK_K][BLOCK_N];
+
+	int tx = threadIdx.x;
+	int ty = threadIdx.y;
+	int bx = blockIdx.x;
+	int by = blockIdx.y;
+
+	_DOUBLE_ Cij[SUB_BLOCK_Y][SUB_BLOCK_X] = {0};
+
+	int I = by * BLOCK_M;
+	int J = bx * BLOCK_N;
+
+	for(int kk = 0; kk < N; kk += BLOCK_K) {
+		// Load A into shared memory
+		for(int i = 0; i < BLOCK_M; i += BLOCKDIM_Y) {
+			for(int j = 0; j < BLOCK_K; j += BLOCKDIM_X) {
+				As[ty + i][tx + i] = load_w_zero_padding(A, I + ty + i, kk + tx + j);
+			}
+		}
+
+		// Load B into shared memory
+		for(int i = 0; i < BLOCK_K; i += BLOCKDIM_Y) {
+			for(int j = 0; j < BLOCK_N; j += BLOCKDIM_X) {
+				Bs[ty + i][tx + j] = load_w_zero_padding(B, kk + ty + i, J + j + tx);
+			}
+		}
+		__syncthreads();
+
+		// Computing and accumulating block products
+		for(int k = 0; k < BLOCK_K; k++) {
+			for(int i = 0; i < SUB_BLOCK_Y; i++) {
+				for(int j = 0; j < SUB_BLOCK_X; j++) {
+					Cij[i][j] += As[i * BLOCKDIM_Y + ty][k] * Bs[k][j * BLOCKDIM_X + tx];
 				}
+			}
+		}
+		__syncthreads();
+	}
+
+	for(int i = 0; i < SUB_BLOCK_Y; i++) {
+		for(int j = 0; j < SUB_BLOCK_X; j++) {
+			int _i = (i * BLOCKDIM_Y) + I + ty;
+			int _j = (j * BLOCKDIM_X) + J + tx;
+
+			if(_i < N && _j < N) {
+				C[(_i * N) + j] = Cij[i][j];
 			}
 		}
 	}
