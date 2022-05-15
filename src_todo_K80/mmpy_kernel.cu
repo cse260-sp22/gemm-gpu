@@ -13,26 +13,28 @@ using namespace std;
 #define TW 32
 
 #define globA(x, y) A[x*N + y]
-#define globB(x, y) A[x*N + y]
+#define globB(x, y) B[x*N + y]
 
-//__global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B)
-//{
-//
-//    int I = blockIdx.y * blockDim.y + threadIdx.y;
-//    int J = blockIdx.x * blockDim.x + threadIdx.x;
-//
-//    if ((I < N) && (J < N))
-//    {
-//        _DOUBLE_ _c = 0;
-//        for (unsigned int k = 0; k < N; k++)
-//        {
-//            _DOUBLE_ a = A[I * N + k];
-//            _DOUBLE_ b = B[k * N + J];
-//            _c += a * b;
-//        }
-//        C[I * N + J] = _c;
-//    }
-//}
+#define load_w_zero_padding(matrix, i, j, N)((i < N && j < N) ? matrix[(i * N) + j] : 0)
+
+__global__ void matMul_naive(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B)
+{
+
+   int I = blockIdx.y * blockDim.y + threadIdx.y;
+   int J = blockIdx.x * blockDim.x + threadIdx.x;
+
+   if ((I < N) && (J < N))
+   {
+       _DOUBLE_ _c = 0;
+       for (unsigned int k = 0; k < N; k++)
+       {
+           _DOUBLE_ a = A[I * N + k];
+           _DOUBLE_ b = B[k * N + J];
+           _c += a * b;
+       }
+       C[I * N + J] = _c;
+   }
+}
 
 __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 
@@ -50,57 +52,64 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 
 	double Cij[2][2] = {0};
 
-	for (int kk = 0; kk < (N+TW-1)/TW; kk++){
-	
+	for (int kk = 0; kk < (N+TW-1)/TW; kk++) {
+		// Here the i, j could be switched between A and B
 		//Loading A
-		if (I < N && (kk*TW + tx) < N){
-			As[ty][tx] = A[I*N + kk*TW + tx];
+		#pragma unroll
+		for(int i = 0; i < 1; i++) {
+			#pragma unroll
+			for(int j = 0; j < 1; j++) {
+				As[ty + i * ILP_OFFSET][tx + j * ILP_OFFSET] = load_w_zero_padding(A, I + (i * ILP_OFFSET), (kk*TW + tx + (j * ILP_OFFSET)), N);
+				// As[ty+ILP_OFFSET + i][tx + j] = load_w_zero_padding(A, (I + ILP_OFFSET + i), (kk*TW + tx + j), N);
+				// As[ty + i][tx+ILP_OFFSET + j] = load_w_zero_padding(A, (I + i), (kk*TW + tx + ILP_OFFSET + j), N);
+				// As[ty+ILP_OFFSET + i][tx+ILP_OFFSET + j] = load_w_zero_padding(A, (I + ILP_OFFSET + i), (kk*TW + tx + ILP_OFFSET + j), N);
+			}
 		}
-		else As[ty][tx] = 0;
-		
-		if ((I+16) < N && (kk*TW + tx) < N){
-			As[ty+16][tx] = A[(I+16)*N + kk*TW + tx];
-		}
-		else As[ty+16][tx] = 0;
-		
-		if (I < N && (kk*TW + tx + 16) < N){
-			As[ty][tx+16] = A[I*N + kk*TW + tx+16];
-		}
-		else As[ty][tx+16] = 0;
-
-		if ((I+16) < N && (kk*TW + tx + 16) < N){
-			As[ty+16][tx+16] = A[(I+16)*N + kk*TW + tx+16];
-		}
-		else As[ty+16][tx+16] = 0;
 
 		//Loading B
-		if ((kk*TW + ty) < N && J < N){
-			Bs[ty][tx] = B[(kk*TW+ty)*N + J];
+		#pragma unroll
+		for(int i = 0; i < 1; i++) {
+			#pragma unroll
+			for(int j = 0; j < 1; j++) {
+				Bs[ty + i * ILP_OFFSET][tx + j * ILP_OFFSET] = load_w_zero_padding(B, (kk*TW+ty + (i * ILP_OFFSET)), J + (j * ILP_OFFSET), N);
+				// Bs[ty + ILP_OFFSET + i][tx + j] = load_w_zero_padding(B, (kk*TW+ty + ILP_OFFSET + i), J + j, N);
+				// Bs[ty + i][tx + ILP_OFFSET + j] = load_w_zero_padding(B, (kk*TW+ty + i), J + ILP_OFFSET + j, N);
+				// Bs[ty + ILP_OFFSET + i][tx + ILP_OFFSET + j] = load_w_zero_padding(B, (kk*TW+ty + ILP_OFFSET + i), J + ILP_OFFSET + j, N);
+			}
 		}
-		else Bs[ty][tx] = 0;
 
-		if ((kk*TW + ty + 16) < N && J < N){
-			Bs[ty+16][tx] = B[(kk*TW+ty+16)*N + J];
-		}
-		else Bs[ty+16][tx] = 0;
-
-		if ((kk*TW + ty) < N && (J+16) < N){
-			Bs[ty][tx+16] = B[(kk*TW+ty)*N + J+16];
-		}
-		else Bs[ty][tx+16] = 0;
-
-		if ((kk*TW + ty + 16) < N && (J+16) < N){
-			Bs[ty+16][tx+16] = B[(kk*TW+ty+16)*N + J+16];
-		}
-		else Bs[ty+16][tx+16] = 0;
-		
 		__syncthreads();
 
 		for (int k = 0; k < TW; k++){
-			Cij[0][0] += As[ty][k] * Bs[k][tx];
-			Cij[1][0] += As[ty+16][k] * Bs[k][tx];
-			Cij[0][1] += As[ty][k] * Bs[k][tx+16];
-			Cij[1][1] += As[ty+16][k] * Bs[k][tx+16];
+			// Here the +1 could be shifted to A and vice-versa
+			#pragma unroll
+			for(int i = 0; i < 1; i++) {
+				#pragma unroll
+				for(int j = 0; j < 1; j++) {
+					C[i][j] = As[ty + i * ILP_OFFSET][k] * Bs[k][tx + j * ILP_OFFSET];
+				}
+			}
+			// The for loop above expands to:
+
+			// Cij[0][0] += As[ty][k] * Bs[k][tx];
+			// Cij[0][1] += As[ty][k] * Bs[k][tx + 1];
+			// Cij[1][0] += As[ty + 1][k] * Bs[k][tx];
+			// Cij[1][1] += As[ty + 1][k] * Bs[k][tx + 1];
+
+			// Cij[0][2] += As[ty][k] * Bs[k][tx+ILP_OFFSET];
+			// Cij[0][3] += As[ty][k] * Bs[k][tx+ILP_OFFSET + 1];
+			// Cij[1][2] += As[ty + 1][k] * Bs[k][tx+ILP_OFFSET];
+			// Cij[1][3] += As[ty + 1][k] * Bs[k][tx+ILP_OFFSET + 1];
+
+			// Cij[2][0] += As[ty+ILP_OFFSET][k] * Bs[k][tx];
+			// Cij[2][1] += As[ty+ILP_OFFSET][k] * Bs[k][tx + 1];
+			// Cij[3][0] += As[ty+ILP_OFFSET + 1][k] * Bs[k][tx];
+			// Cij[3][1] += As[ty+ILP_OFFSET + 1][k] * Bs[k][tx + 1];
+
+			// Cij[2][2] += As[ty+ILP_OFFSET][k] * Bs[k][tx+ILP_OFFSET];
+			// Cij[2][3] += As[ty+ILP_OFFSET][k] * Bs[k][tx+ILP_OFFSET + 1];
+			// Cij[3][2] += As[ty+ILP_OFFSET + 1][k] * Bs[k][tx+ILP_OFFSET];
+			// Cij[3][2] += As[ty+ILP_OFFSET + 1][k] * Bs[k][tx+ILP_OFFSET + 1];
 		}
 		__syncthreads();
 	}
