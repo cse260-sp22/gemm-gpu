@@ -86,7 +86,7 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 			for(int i = 0; i < 1; i++) {
 				#pragma unroll
 				for(int j = 0; j < 1; j++) {
-					C[i][j] = As[ty + i * ILP_OFFSET][k] * Bs[k][tx + j * ILP_OFFSET];
+					Cij[i][j] += As[ty + j * ILP_OFFSET][k] * Bs[k][tx + i * ILP_OFFSET];
 				}
 			}
 			// The for loop above expands to:
@@ -117,13 +117,13 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 	if (I < N && J < N){
 		C[I*N + J] = Cij[0][0];
 	}
-	if ((I+16) < N && J < N){
-		C[(I+16)*N + J] = Cij[1][0];
+	if ((I+ILP_OFFSET) < N && J < N){
+		C[(I+ILP_OFFSET)*N + J] = Cij[1][0];
 	}
-	if (I < N && (J+16) < N){
-		C[I*N + J+16] = Cij[0][1];
+	if (I < N && (J+ILP_OFFSET) < N){
+		C[I*N + J+ILP_OFFSET] = Cij[0][1];
 	}
-	if ((I+16) < N && (J+16) < N){
-		C[(I+16)*N + J+16] = Cij[1][1];
+	if ((I+ILP_OFFSET) < N && (J+ILP_OFFSET) < N){
+		C[(I+ILP_OFFSET)*N + J+ILP_OFFSET] = Cij[1][1];
 	}
 }
