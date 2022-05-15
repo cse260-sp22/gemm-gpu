@@ -58,20 +58,20 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 		}
 		else As[ty][tx] = 0;
 		
-		if ((I+16) < N && (kk*TW + tx) < N){
-			As[ty+16][tx] = A[(I+16)*N + kk*TW + tx];
+		if ((I+ILP_OFFSET) < N && (kk*TW + tx) < N){
+			As[ty+ILP_OFFSET][tx] = A[(I+ILP_OFFSET)*N + kk*TW + tx];
 		}
-		else As[ty+16][tx] = 0;
+		else As[ty+ILP_OFFSET][tx] = 0;
 		
-		if (I < N && (kk*TW + tx + 16) < N){
-			As[ty][tx+16] = A[I*N + kk*TW + tx+16];
+		if (I < N && (kk*TW + tx + ILP_OFFSET) < N){
+			As[ty][tx+ILP_OFFSET] = A[I*N + kk*TW + tx+ILP_OFFSET];
 		}
-		else As[ty][tx+16] = 0;
+		else As[ty][tx+ILP_OFFSET] = 0;
 
-		if ((I+16) < N && (kk*TW + tx + 16) < N){
-			As[ty+16][tx+16] = A[(I+16)*N + kk*TW + tx+16];
+		if ((I+ILP_OFFSET) < N && (kk*TW + tx + ILP_OFFSET) < N){
+			As[ty+ILP_OFFSET][tx+ILP_OFFSET] = A[(I+ILP_OFFSET)*N + kk*TW + tx+ILP_OFFSET];
 		}
-		else As[ty+16][tx+16] = 0;
+		else As[ty+ILP_OFFSET][tx+ILP_OFFSET] = 0;
 
 		//Loading B
 		if ((kk*TW + ty) < N && J < N){
@@ -79,28 +79,28 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 		}
 		else Bs[ty][tx] = 0;
 
-		if ((kk*TW + ty + 16) < N && J < N){
-			Bs[ty+16][tx] = B[(kk*TW+ty+16)*N + J];
+		if ((kk*TW + ty + ILP_OFFSET) < N && J < N){
+			Bs[ty+ILP_OFFSET][tx] = B[(kk*TW+ty+ILP_OFFSET)*N + J];
 		}
-		else Bs[ty+16][tx] = 0;
+		else Bs[ty+ILP_OFFSET][tx] = 0;
 
-		if ((kk*TW + ty) < N && (J+16) < N){
-			Bs[ty][tx+16] = B[(kk*TW+ty)*N + J+16];
+		if ((kk*TW + ty) < N && (J+ILP_OFFSET) < N){
+			Bs[ty][tx+ILP_OFFSET] = B[(kk*TW+ty)*N + J+ILP_OFFSET];
 		}
-		else Bs[ty][tx+16] = 0;
+		else Bs[ty][tx+ILP_OFFSET] = 0;
 
-		if ((kk*TW + ty + 16) < N && (J+16) < N){
-			Bs[ty+16][tx+16] = B[(kk*TW+ty+16)*N + J+16];
+		if ((kk*TW + ty + ILP_OFFSET) < N && (J+ILP_OFFSET) < N){
+			Bs[ty+ILP_OFFSET][tx+ILP_OFFSET] = B[(kk*TW+ty+ILP_OFFSET)*N + J+ILP_OFFSET];
 		}
-		else Bs[ty+16][tx+16] = 0;
+		else Bs[ty+ILP_OFFSET][tx+ILP_OFFSET] = 0;
 		
 		__syncthreads();
 
 		for (int k = 0; k < TW; k++){
 			Cij[0][0] += As[ty][k] * Bs[k][tx];
-			Cij[1][0] += As[ty+16][k] * Bs[k][tx];
-			Cij[0][1] += As[ty][k] * Bs[k][tx+16];
-			Cij[1][1] += As[ty+16][k] * Bs[k][tx+16];
+			Cij[1][0] += As[ty+ILP_OFFSET][k] * Bs[k][tx];
+			Cij[0][1] += As[ty][k] * Bs[k][tx+ILP_OFFSET];
+			Cij[1][1] += As[ty+ILP_OFFSET][k] * Bs[k][tx+ILP_OFFSET];
 		}
 		__syncthreads();
 	}
@@ -108,13 +108,13 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 	if (I < N && J < N){
 		C[I*N + J] = Cij[0][0];
 	}
-	if ((I+16) < N && J < N){
-		C[(I+16)*N + J] = Cij[1][0];
+	if ((I+ILP_OFFSET) < N && J < N){
+		C[(I+ILP_OFFSET)*N + J] = Cij[1][0];
 	}
-	if (I < N && (J+16) < N){
-		C[I*N + J+16] = Cij[0][1];
+	if (I < N && (J+ILP_OFFSET) < N){
+		C[I*N + J+ILP_OFFSET] = Cij[0][1];
 	}
-	if ((I+16) < N && (J+16) < N){
-		C[(I+16)*N + J+16] = Cij[1][1];
+	if ((I+ILP_OFFSET) < N && (J+ILP_OFFSET) < N){
+		C[(I+ILP_OFFSET)*N + J+ILP_OFFSET] = Cij[1][1];
 	}
 }
