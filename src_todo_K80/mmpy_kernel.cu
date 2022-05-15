@@ -56,9 +56,9 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 		// Here the i, j could be switched between A and B
 		//Loading A
 		#pragma unroll
-		for(int i = 0; i < 1; i++) {
+		for(int i = 0; i < 2; i++) {
 			#pragma unroll
-			for(int j = 0; j < 1; j++) {
+			for(int j = 0; j < 2; j++) {
 				As[ty + i * ILP_OFFSET][tx + j * ILP_OFFSET] = load_w_zero_padding(A, I + (i * ILP_OFFSET), (kk*TW + tx + (j * ILP_OFFSET)), N);
 				// As[ty+ILP_OFFSET + i][tx + j] = load_w_zero_padding(A, (I + ILP_OFFSET + i), (kk*TW + tx + j), N);
 				// As[ty + i][tx+ILP_OFFSET + j] = load_w_zero_padding(A, (I + i), (kk*TW + tx + ILP_OFFSET + j), N);
@@ -68,9 +68,9 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 
 		//Loading B
 		#pragma unroll
-		for(int i = 0; i < 1; i++) {
+		for(int i = 0; i < 2; i++) {
 			#pragma unroll
-			for(int j = 0; j < 1; j++) {
+			for(int j = 0; j < 2; j++) {
 				Bs[ty + i * ILP_OFFSET][tx + j * ILP_OFFSET] = load_w_zero_padding(B, (kk*TW+ty + (i * ILP_OFFSET)), J + (j * ILP_OFFSET), N);
 				// Bs[ty + ILP_OFFSET + i][tx + j] = load_w_zero_padding(B, (kk*TW+ty + ILP_OFFSET + i), J + j, N);
 				// Bs[ty + i][tx + ILP_OFFSET + j] = load_w_zero_padding(B, (kk*TW+ty + i), J + ILP_OFFSET + j, N);
@@ -83,10 +83,10 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 		for (int k = 0; k < TW; k++){
 			// Here the +1 could be shifted to A and vice-versa
 			#pragma unroll
-			for(int i = 0; i < 1; i++) {
+			for(int i = 0; i < 2; i++) {
 				#pragma unroll
-				for(int j = 0; j < 1; j++) {
-					Cij[i][j] += As[ty + j * ILP_OFFSET][k] * Bs[k][tx + i * ILP_OFFSET];
+				for(int j = 0; j < 2; j++) {
+					Cij[i][j] += As[ty + i * ILP_OFFSET][k] * Bs[k][tx + j * ILP_OFFSET];
 				}
 			}
 			// The for loop above expands to:
