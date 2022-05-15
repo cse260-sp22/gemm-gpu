@@ -55,61 +55,54 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 	for (int kk = 0; kk < (N+TW-1)/TW; kk++) {
 		// Here the i, j could be switched between A and B
 		//Loading A
-		#pragma unroll
-		for(int i = 0; i < 2; i++) {
-			#pragma unroll
-			for(int j = 0; j < 2; j++) {
-				As[ty + i * ILP_OFFSET][tx + j * ILP_OFFSET] = load_w_zero_padding(A, I + (i * ILP_OFFSET), (kk*TW + tx + (j * ILP_OFFSET)), N);
-				// As[ty+ILP_OFFSET + i][tx + j] = load_w_zero_padding(A, (I + ILP_OFFSET + i), (kk*TW + tx + j), N);
-				// As[ty + i][tx+ILP_OFFSET + j] = load_w_zero_padding(A, (I + i), (kk*TW + tx + ILP_OFFSET + j), N);
-				// As[ty+ILP_OFFSET + i][tx+ILP_OFFSET + j] = load_w_zero_padding(A, (I + ILP_OFFSET + i), (kk*TW + tx + ILP_OFFSET + j), N);
-			}
+		if (I < N && (kk*TW + tx) < N){
+			As[ty][tx] = A[I*N + kk*TW + tx];
 		}
+		else As[ty][tx] = 0;
+		
+		if ((I+ILP_OFFSET) < N && (kk*TW + tx) < N){
+			As[ty+ILP_OFFSET][tx] = A[(I+ILP_OFFSET)*N + kk*TW + tx];
+		}
+		else As[ty+ILP_OFFSET][tx] = 0;
+		
+		if (I < N && (kk*TW + tx + ILP_OFFSET) < N){
+			As[ty][tx+ILP_OFFSET] = A[I*N + kk*TW + tx+ILP_OFFSET];
+		}
+		else As[ty][tx+ILP_OFFSET] = 0;
+
+		if ((I+ILP_OFFSET) < N && (kk*TW + tx + ILP_OFFSET) < N){
+			As[ty+ILP_OFFSET][tx+ILP_OFFSET] = A[(I+ILP_OFFSET)*N + kk*TW + tx+ILP_OFFSET];
+		}
+		else As[ty+ILP_OFFSET][tx+ILP_OFFSET] = 0;
 
 		//Loading B
-		#pragma unroll
-		for(int i = 0; i < 2; i++) {
-			#pragma unroll
-			for(int j = 0; j < 2; j++) {
-				Bs[ty + i * ILP_OFFSET][tx + j * ILP_OFFSET] = load_w_zero_padding(B, (kk*TW+ty + (i * ILP_OFFSET)), J + (j * ILP_OFFSET), N);
-				// Bs[ty + ILP_OFFSET + i][tx + j] = load_w_zero_padding(B, (kk*TW+ty + ILP_OFFSET + i), J + j, N);
-				// Bs[ty + i][tx + ILP_OFFSET + j] = load_w_zero_padding(B, (kk*TW+ty + i), J + ILP_OFFSET + j, N);
-				// Bs[ty + ILP_OFFSET + i][tx + ILP_OFFSET + j] = load_w_zero_padding(B, (kk*TW+ty + ILP_OFFSET + i), J + ILP_OFFSET + j, N);
-			}
+		if ((kk*TW + ty) < N && J < N){
+			Bs[ty][tx] = B[(kk*TW+ty)*N + J];
 		}
+		else Bs[ty][tx] = 0;
 
+		if ((kk*TW + ty + ILP_OFFSET) < N && J < N){
+			Bs[ty+ILP_OFFSET][tx] = B[(kk*TW+ty+ILP_OFFSET)*N + J];
+		}
+		else Bs[ty+ILP_OFFSET][tx] = 0;
+
+		if ((kk*TW + ty) < N && (J+ILP_OFFSET) < N){
+			Bs[ty][tx+ILP_OFFSET] = B[(kk*TW+ty)*N + J+ILP_OFFSET];
+		}
+		else Bs[ty][tx+ILP_OFFSET] = 0;
+
+		if ((kk*TW + ty + ILP_OFFSET) < N && (J+ILP_OFFSET) < N){
+			Bs[ty+ILP_OFFSET][tx+ILP_OFFSET] = B[(kk*TW+ty+ILP_OFFSET)*N + J+ILP_OFFSET];
+		}
+		else Bs[ty+ILP_OFFSET][tx+ILP_OFFSET] = 0;
+		
 		__syncthreads();
 
 		for (int k = 0; k < TW; k++){
-			// Here the +1 could be shifted to A and vice-versa
-			#pragma unroll
-			for(int i = 0; i < 2; i++) {
-				#pragma unroll
-				for(int j = 0; j < 2; j++) {
-					Cij[i][j] += As[ty + i * ILP_OFFSET][k] * Bs[k][tx + j * ILP_OFFSET];
-				}
-			}
-			// The for loop above expands to:
-
-			// Cij[0][0] += As[ty][k] * Bs[k][tx];
-			// Cij[0][1] += As[ty][k] * Bs[k][tx + 1];
-			// Cij[1][0] += As[ty + 1][k] * Bs[k][tx];
-			// Cij[1][1] += As[ty + 1][k] * Bs[k][tx + 1];
-
-			// Cij[0][2] += As[ty][k] * Bs[k][tx+ILP_OFFSET];
-			// Cij[0][3] += As[ty][k] * Bs[k][tx+ILP_OFFSET + 1];
-			// Cij[1][2] += As[ty + 1][k] * Bs[k][tx+ILP_OFFSET];
-			// Cij[1][3] += As[ty + 1][k] * Bs[k][tx+ILP_OFFSET + 1];
-
-			// Cij[2][0] += As[ty+ILP_OFFSET][k] * Bs[k][tx];
-			// Cij[2][1] += As[ty+ILP_OFFSET][k] * Bs[k][tx + 1];
-			// Cij[3][0] += As[ty+ILP_OFFSET + 1][k] * Bs[k][tx];
-			// Cij[3][1] += As[ty+ILP_OFFSET + 1][k] * Bs[k][tx + 1];
-
-			// Cij[2][2] += As[ty+ILP_OFFSET][k] * Bs[k][tx+ILP_OFFSET];
-			// Cij[2][3] += As[ty+ILP_OFFSET][k] * Bs[k][tx+ILP_OFFSET + 1];
-			// Cij[3][2] += As[ty+ILP_OFFSET + 1][k] * Bs[k][tx+ILP_OFFSET];
-			// Cij[3][2] += As[ty+ILP_OFFSET + 1][k] * Bs[k][tx+ILP_OFFSET + 1];
+			Cij[0][0] += As[ty][k] * Bs[k][tx];
+			Cij[1][0] += As[ty+ILP_OFFSET][k] * Bs[k][tx];
+			Cij[0][1] += As[ty][k] * Bs[k][tx+ILP_OFFSET];
+			Cij[1][1] += As[ty+ILP_OFFSET][k] * Bs[k][tx+ILP_OFFSET];
 		}
 		__syncthreads();
 	}
