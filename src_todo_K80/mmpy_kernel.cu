@@ -119,11 +119,31 @@ __global__ void matMul_ilp(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 	}
 }
 
-__global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B) {
+__global__ void matMul_naive_naive(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B) {
 	for(int i = 0; i < N; i++) {
 		for(int j = 0; j < N; j++) {
 			for(int k = 0; k < N; k++) {
 				C[i*N + j] += A[i * N + k] * B[k * N + j];
+			}
+		}
+	}
+}
+
+__global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B) {
+	for(int mb = 0; mb < N; mb += MTILE) {
+		for(int nb = 0; nb < N; nb += NTILE) {
+			for(int kb = 0; kb < N; kb += KTILE) {
+				// compute MTILE * NTILE * KTILE matrix product
+				for(int k = 0; k < KTILE; k++) {
+					for(int i = 0; i < MTILE; i++) {
+						for(int j = 0; j < NTILE; j++) {
+							int r = mb + i;
+							int c = nb + j;
+
+							C[r * N + c] += A[r * N + (kb + k)] * B[(kb + k) * N + c];
+						}
+					}
+				}
 			}
 		}
 	}

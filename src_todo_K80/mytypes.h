@@ -6,4 +6,8 @@
 #define BLOCKTILE_M BLOCKDIM_Y/2
 #define BLOCKTILE_N BLOCKDIM_X/2
 
+#define MTILE 32
+#define NTILE 32
+#define KTILE 16
+
 #endif
