@@ -13,28 +13,26 @@ using namespace std;
 #define TW 32
 
 #define globA(x, y) A[x*N + y]
-#define globB(x, y) B[x*N + y]
+#define globB(x, y) A[x*N + y]
 
-#define load_w_zero_padding(matrix, i, j, N)((i < N && j < N) ? matrix[(i * N) + j] : 0)
-
-__global__ void matMul_naive(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B)
-{
-
-   int I = blockIdx.y * blockDim.y + threadIdx.y;
-   int J = blockIdx.x * blockDim.x + threadIdx.x;
-
-   if ((I < N) && (J < N))
-   {
-       _DOUBLE_ _c = 0;
-       for (unsigned int k = 0; k < N; k++)
-       {
-           _DOUBLE_ a = A[I * N + k];
-           _DOUBLE_ b = B[k * N + J];
-           _c += a * b;
-       }
-       C[I * N + J] = _c;
-   }
-}
+//__global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B)
+//{
+//
+//    int I = blockIdx.y * blockDim.y + threadIdx.y;
+//    int J = blockIdx.x * blockDim.x + threadIdx.x;
+//
+//    if ((I < N) && (J < N))
+//    {
+//        _DOUBLE_ _c = 0;
+//        for (unsigned int k = 0; k < N; k++)
+//        {
+//            _DOUBLE_ a = A[I * N + k];
+//            _DOUBLE_ b = B[k * N + J];
+//            _c += a * b;
+//        }
+//        C[I * N + J] = _c;
+//    }
+//}
 
 __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 
@@ -52,28 +50,28 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 
 	double Cij[2][2] = {0};
 
-	for (int kk = 0; kk < (N+TW-1)/TW; kk++) {
-		// Here the i, j could be switched between A and B
+	for (int kk = 0; kk < (N+TW-1)/TW; kk++){
+	
 		//Loading A
 		if (I < N && (kk*TW + tx) < N){
 			As[ty][tx] = A[I*N + kk*TW + tx];
 		}
 		else As[ty][tx] = 0;
 		
-		if ((I+ILP_OFFSET) < N && (kk*TW + tx) < N){
-			As[ty+ILP_OFFSET][tx] = A[(I+ILP_OFFSET)*N + kk*TW + tx];
+		if ((I+16) < N && (kk*TW + tx) < N){
+			As[ty+16][tx] = A[(I+16)*N + kk*TW + tx];
 		}
-		else As[ty+ILP_OFFSET][tx] = 0;
+		else As[ty+16][tx] = 0;
 		
-		if (I < N && (kk*TW + tx + ILP_OFFSET) < N){
-			As[ty][tx+ILP_OFFSET] = A[I*N + kk*TW + tx+ILP_OFFSET];
+		if (I < N && (kk*TW + tx + 16) < N){
+			As[ty][tx+16] = A[I*N + kk*TW + tx+16];
 		}
-		else As[ty][tx+ILP_OFFSET] = 0;
+		else As[ty][tx+16] = 0;
 
-		if ((I+ILP_OFFSET) < N && (kk*TW + tx + ILP_OFFSET) < N){
-			As[ty+ILP_OFFSET][tx+ILP_OFFSET] = A[(I+ILP_OFFSET)*N + kk*TW + tx+ILP_OFFSET];
+		if ((I+16) < N && (kk*TW + tx + 16) < N){
+			As[ty+16][tx+16] = A[(I+16)*N + kk*TW + tx+16];
 		}
-		else As[ty+ILP_OFFSET][tx+ILP_OFFSET] = 0;
+		else As[ty+16][tx+16] = 0;
 
 		//Loading B
 		if ((kk*TW + ty) < N && J < N){
@@ -81,28 +79,28 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 		}
 		else Bs[ty][tx] = 0;
 
-		if ((kk*TW + ty + ILP_OFFSET) < N && J < N){
-			Bs[ty+ILP_OFFSET][tx] = B[(kk*TW+ty+ILP_OFFSET)*N + J];
+		if ((kk*TW + ty + 16) < N && J < N){
+			Bs[ty+16][tx] = B[(kk*TW+ty+16)*N + J];
 		}
-		else Bs[ty+ILP_OFFSET][tx] = 0;
+		else Bs[ty+16][tx] = 0;
 
-		if ((kk*TW + ty) < N && (J+ILP_OFFSET) < N){
-			Bs[ty][tx+ILP_OFFSET] = B[(kk*TW+ty)*N + J+ILP_OFFSET];
+		if ((kk*TW + ty) < N && (J+16) < N){
+			Bs[ty][tx+16] = B[(kk*TW+ty)*N + J+16];
 		}
-		else Bs[ty][tx+ILP_OFFSET] = 0;
+		else Bs[ty][tx+16] = 0;
 
-		if ((kk*TW + ty + ILP_OFFSET) < N && (J+ILP_OFFSET) < N){
-			Bs[ty+ILP_OFFSET][tx+ILP_OFFSET] = B[(kk*TW+ty+ILP_OFFSET)*N + J+ILP_OFFSET];
+		if ((kk*TW + ty + 16) < N && (J+16) < N){
+			Bs[ty+16][tx+16] = B[(kk*TW+ty+16)*N + J+16];
 		}
-		else Bs[ty+ILP_OFFSET][tx+ILP_OFFSET] = 0;
+		else Bs[ty+16][tx+16] = 0;
 		
 		__syncthreads();
 
 		for (int k = 0; k < TW; k++){
 			Cij[0][0] += As[ty][k] * Bs[k][tx];
-			Cij[1][0] += As[ty+ILP_OFFSET][k] * Bs[k][tx];
-			Cij[0][1] += As[ty][k] * Bs[k][tx+ILP_OFFSET];
-			Cij[1][1] += As[ty+ILP_OFFSET][k] * Bs[k][tx+ILP_OFFSET];
+			Cij[1][0] += As[ty+16][k] * Bs[k][tx];
+			Cij[0][1] += As[ty][k] * Bs[k][tx+16];
+			Cij[1][1] += As[ty+16][k] * Bs[k][tx+16];
 		}
 		__syncthreads();
 	}
@@ -110,13 +108,13 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 	if (I < N && J < N){
 		C[I*N + J] = Cij[0][0];
 	}
-	if ((I+ILP_OFFSET) < N && J < N){
-		C[(I+ILP_OFFSET)*N + J] = Cij[1][0];
+	if ((I+16) < N && J < N){
+		C[(I+16)*N + J] = Cij[1][0];
 	}
-	if (I < N && (J+ILP_OFFSET) < N){
-		C[I*N + J+ILP_OFFSET] = Cij[0][1];
+	if (I < N && (J+16) < N){
+		C[I*N + J+16] = Cij[0][1];
 	}
-	if ((I+ILP_OFFSET) < N && (J+ILP_OFFSET) < N){
-		C[(I+ILP_OFFSET)*N + J+ILP_OFFSET] = Cij[1][1];
+	if ((I+16) < N && (J+16) < N){
+		C[(I+16)*N + J+16] = Cij[1][1];
 	}
 }
