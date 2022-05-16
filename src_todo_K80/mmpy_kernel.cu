@@ -107,11 +107,11 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 		for (int prod = 0; prod < 16; prod++){
 			#pragma unroll
 			for (int ilp = 0; ilp < 4; ilp++){
-				Ar[i] 		= As[warp_id_y + warp_thd_id_y + ilp]		[prod];
-				Ar[i + 4] 	= As[warp_id_y + warp_thd_id_y + ilp + 32]	[prod];
+				Ar[ilp] 		= As[warp_id_y + warp_thd_id_y + ilp]		[prod];
+				Ar[ilp + 4] 	= As[warp_id_y + warp_thd_id_y + ilp + 32]	[prod];
 
-				Br[i]		= Bs[prod][warp_id_x + warp_thd_id_x + ilp];
-				Br[i + 4]	= Bs[prod][warp_id_x + warp_thd_id_x + ilp + 16];
+				Br[ilp]		= Bs[prod][warp_id_x + warp_thd_id_x + ilp];
+				Br[ilp + 4]	= Bs[prod][warp_id_x + warp_thd_id_x + ilp + 16];
 			
 			}
 
