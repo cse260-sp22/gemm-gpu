@@ -19,13 +19,6 @@ using namespace std;
 #define Cx 32
 #define Cc 32
 
-__global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B) {
-	if(N <= 512)
-		matMul_ilp(N, C, A, B);
-	else
-		matMul_cutlass(N, C, A, B);
-}
-
 __global__ void matMul_ilp(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 
 	//local shared storage
@@ -149,4 +142,9 @@ __global__ void matMul_cutlass(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 	}
 }
 
-
+__global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B) {
+	if(N <= 512)
+		matMul_ilp(N, C, A, B);
+	else
+		matMul_cutlass(N, C, A, B);
+}
