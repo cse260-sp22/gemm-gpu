@@ -77,10 +77,14 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 	for (int str_y = 0; str_y < 4; str_y++){
 		#pragma unroll
 		for (int str_x = 0; str_x < 4; str_x++){
-			globC((by + warp_id_y + warp_thd_id_y + i), (bx + warp_id_x + warp_thd_id_x + j)) 			= Cr[i]		[j];	
-			globC((by + warp_id_y + warp_thd_id_y + i), (bx + warp_id_x + warp_thd_id_x + j + 16)) 		= Cr[i]		[j + 4];	
-			globC((by + warp_id_y + warp_thd_id_y + i + 32), (bx + warp_id_x + warp_thd_id_x + j)) 		= Cr[i + 4]	[j];	
-			globC((by + warp_id_y + warp_thd_id_y + i + 32), (bx + warp_id_x + warp_thd_id_x + j + 16)) = Cr[i + 4]	[j + 4];	
+			if ((by + warp_id_y + warp_thd_id_y + i) < N && (bx + warp_id_x + warp_thd_id_x + j) < N)
+				globC((by + warp_id_y + warp_thd_id_y + i), (bx + warp_id_x + warp_thd_id_x + j)) 			= Cr[i]		[j];	
+			if ((by + warp_id_y + warp_thd_id_y + i) < N && (bx + warp_id_x + warp_thd_id_x + j + 16) < N)
+				globC((by + warp_id_y + warp_thd_id_y + i), (bx + warp_id_x + warp_thd_id_x + j + 16)) 		= Cr[i]		[j + 4];	
+			if ((by + warp_id_y + warp_thd_id_y + i + 32) < N && (bx + warp_id_x + warp_thd_id_x + j) < N)
+				globC((by + warp_id_y + warp_thd_id_y + i + 32), (bx + warp_id_x + warp_thd_id_x + j)) 		= Cr[i + 4]	[j];	
+			if ((by + warp_id_y + warp_thd_id_y + i + 32) < N && (bx + warp_id_x + warp_thd_id_x + j + 16) < N)
+				globC((by + warp_id_y + warp_thd_id_y + i + 32), (bx + warp_id_x + warp_thd_id_x + j + 16)) = Cr[i + 4]	[j + 4];	
 		}
 	}
 }
