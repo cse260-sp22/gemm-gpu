@@ -99,7 +99,7 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 		#pragma unroll
 		for (int num_ld = 0; num_ld < 128; num_ld += 16){
 			As[ty + num_ld][tx] = globA((by + ty + num_ld), (tx + tl_id));
-			Bs[ty][tx + i] = globB((ty + tl_id), (bx + tx + num_ld));
+			Bs[ty][tx + num_ld] = globB((ty + tl_id), (bx + tx + num_ld));
 		}
 		__syncthreads();
 
