@@ -169,14 +169,14 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B) {
 		// Load A into shared memory
 		for(int i = 0; i < BLOCK_M; i += BLOCKDIM_Y) {
 			for(int j = 0; j < BLOCK_K; j += BLOCKDIM_X) {
-				As[ty + i][tx + i] = load_w_zero_padding(A, I + ty + i, kk + tx + j);
+				As[ty + i][tx + i] = load_w_zero_padding(A, I + ty + i, kk + tx + j, N);
 			}
 		}
 
 		// Load B into shared memory
 		for(int i = 0; i < BLOCK_K; i += BLOCKDIM_Y) {
 			for(int j = 0; j < BLOCK_N; j += BLOCKDIM_X) {
-				Bs[ty + i][tx + j] = load_w_zero_padding(B, kk + ty + i, J + j + tx);
+				Bs[ty + i][tx + j] = load_w_zero_padding(B, kk + ty + i, J + j + tx, N);
 			}
 		}
 		__syncthreads();
