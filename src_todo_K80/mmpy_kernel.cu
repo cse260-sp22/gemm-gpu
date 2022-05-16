@@ -19,7 +19,7 @@ using namespace std;
 #define Cx 32
 #define Cc 32
 
-__global__ void matMul_ilp(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
+void matMul_ilp(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 
 	//local shared storage
 	__shared__ _DOUBLE_ As[Cy][Cc];
@@ -67,7 +67,7 @@ __global__ void matMul_ilp(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 
 }
 
-__global__ void matMul_cutlass(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
+void matMul_cutlass(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 
 	//local shared storage
 	__shared__ double As[128][17];
