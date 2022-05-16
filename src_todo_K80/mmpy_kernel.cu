@@ -15,6 +15,7 @@ using namespace std;
 #define Cx 32
 #define Cc 32
 
+
 #define globA(x, y) __ldg(&A[x*N + y])
 #define globB(x, y) __ldg(&B[x*N + y])
 #define globC(x, y) C[x*N + y]
@@ -51,6 +52,7 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 		__syncthreads();
 
 		for (int k = 0; k < TW; k++){
+
 			Cij[0] += As[ty]		[k] * Bs[k][tx];
 			Cij[1] += As[ty + 16]	[k] * Bs[k][tx];
 			Cij[2] += As[ty]		[k] * Bs[k][tx + 16];
