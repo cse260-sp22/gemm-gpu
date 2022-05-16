@@ -1,8 +1,8 @@
 // Matrix multiply device code
 #include <assert.h>
 #include <math.h>
-#include "types.h"
-#include "utils.h"
+#include "../src/types.h"
+#include "../src/utils.h"
 using namespace std;
 
 #define BLOCK_SIZE_M 96
