@@ -70,18 +70,18 @@ __global__ void matMul_ilp(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 
 	//local shared storage
-	__shared__ double As[BLOCKTILE_M][17];
-	__shared__ double Bs[16][BLOCKTILE_N];
+	__shared__ double As[128][17];
+	__shared__ double Bs[16][128];
 
 	_DOUBLE_ Ar[8] 		= {0};
 	_DOUBLE_ Br[8] 		= {0};
 	_DOUBLE_ Cr[8][8] 	= {0};
 
 	const int tx = threadIdx.x;
-	const int bx = blockIdx.x*BLOCKTILE_M;
+	const int bx = blockIdx.x*128;
 
 	const int ty = threadIdx.y;
-	const int by = blockIdx.y*BLOCKTILE_N;
+	const int by = blockIdx.y*128;
 
 	const int thd_id = ty*16 + tx;
 
@@ -97,7 +97,7 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 	for (int tl_id = 0; tl_id < N; tl_id += 16){
 		
 		#pragma unroll
-		for (int num_ld = 0; num_ld < BLOCKTILE_M; num_ld += 16){
+		for (int num_ld = 0; num_ld < 128; num_ld += 16){
 			As[ty + num_ld][tx] = globA((by + ty + num_ld), (tx + tl_id));
 			Bs[ty][tx + num_ld] = globB((ty + tl_id), (bx + tx + num_ld));
 		}
