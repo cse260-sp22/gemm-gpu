@@ -145,8 +145,8 @@ __global__ void matMul_old(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 
 	//local shared storage
-	__shared__ double As[64][65];
-	__shared__ double Bs[64][64];
+	__shared__ double As[64][17];
+	__shared__ double Bs[16][64];
 
 	_DOUBLE_ Ar[4] 		= {0};
 	_DOUBLE_ Br[4] 		= {0};
@@ -169,7 +169,7 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 	const int warp_id_y = 32*(warp_id / 4);
 
 	#pragma unroll
-	for (int tl_id = 0; tl_id < N; tl_id += 64){
+	for (int tl_id = 0; tl_id < N; tl_id += 16){
 		
 		#pragma unroll
 		for (int num_ld = 0; num_ld < 64; num_ld += 16){
@@ -179,7 +179,7 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 		__syncthreads();
 
 		#pragma unroll
-		for (int prod = 0; prod < 64; prod++){
+		for (int prod = 0; prod < 16; prod++){
 			#pragma unroll
 			for (int ilp = 0; ilp < 2; ilp++){
 				Ar[ilp] 		= As[warp_id_y + warp_thd_id_y + ilp]		[prod];
