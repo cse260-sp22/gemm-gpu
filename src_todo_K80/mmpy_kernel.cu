@@ -27,16 +27,18 @@ __global__ void matMul(int N, _DOUBLE_ * __restrict C, _DOUBLE_ * __restrict A, 
 // 512 - 424
 // 1024 - 440
 // 2048 - 442.9
-int Cy = 128;
-int Cx = 128;
-int Cc = 16;
+const int Cy = 128;
+const int Cx = 128;
+const int Cc = 16;
+
+const int creg_idx = 8;
 
 int ILP = 8;
 
 	if (N < 300) {
-		Cy = 32;
-Cx = 32;
-Cc = 32;
+// 		Cy = 32;
+// Cx = 32;
+// Cc = 16;
 
 ILP = 2;
 	}
@@ -54,7 +56,7 @@ ILP = 2;
 	const int J = bx*blockDim.x + tx;
 	const int I = by*blockDim.y + ty;
 
-	_DOUBLE_ Cij[ILP][ILP] = {0};
+	_DOUBLE_ Cij[creg_idx][creg_idx] = {0};
 
 	#pragma unroll
 	for (int kk = 0; kk < (N+Cc-1)/Cc; kk++){
