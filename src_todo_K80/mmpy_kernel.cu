@@ -41,26 +41,33 @@ __global__ void matMul(int N, _DOUBLE_ * __restrict C, _DOUBLE_ * __restrict A, 
 	for (int kk = 0; kk < (N+Cc-1)/Cc; kk++){
 		#pragma unroll
 		for (int load = 0; load < ILP; load ++){
-				if (I + 16*ILP < N && kk*Cc + tx < N) As[ty + 16*ILP][tx] = globA((I + 16*ILP), (kk*Cc + tx)); else As[ty + 16*ILP][tx] = 0;
+				if (I + 16*load < N && kk*Cc + tx < N) As[ty + 16*load][tx] = globA((I + 16*load), (kk*Cc + tx)); else As[ty + 16*load][tx] = 0;
 
-				if (kk*Cc + ty < N && J + 16*ILP < N) Bs[ty][tx + 16*ILP] = globB((kk*Cc + ty), (J + 16*ILP)); else Bs[ty][tx + 16*ILP] = 0;
+				if (kk*Cc + ty < N && J + 16*load < N) Bs[ty][tx + 16*load] = globB((kk*Cc + ty), (J + 16*load)); else Bs[ty][tx + 16*load] = 0;
 		}	
 		
 		__syncthreads();
-
+        #pragma unroll
 		for (int k = 0; k < Cc; k++){
-
-			Cij[0] += As[ty]		[k] * Bs[k][tx];
-			Cij[1] += As[ty + 16]	[k] * Bs[k][tx];
-			Cij[2] += As[ty]		[k] * Bs[k][tx + 16];
-			Cij[3] += As[ty + 16]	[k] * Bs[k][tx + 16];
+            #pragma unroll
+            for (int i = 0; i < ILP; i++){
+                #pragma unroll
+                for (int j = 0; j < ILP; j++){
+                    Cij[i][j] += As[ty + 16*j][k]*Bs[k][tx + 16*i]; 
+                }
+            }
         }
 		__syncthreads();
 	}
 
-	if (I < N 		&& J < N) 		globC(I,        J)          = Cij[0];
-	if (I + 16 < N 	&& J < N) 		globC((I + 16), J)          = Cij[1];
-	if (I < N 		&& J + 16 < N) 	globC(I,        (J + 16))   = Cij[2];
-	if (I + 16 < N 	&& J + 16 < N) 	globC((I + 16), (J + 16))   = Cij[3];
+    #pragma unroll
+    for (int i = 0; i < ILP; i++){
+        #pragma unroll
+        for (int j = 0; j < ILP; j++){
+            if (I + 16*j < N && J + 16*i < N)
+            globC((I + 16*j), (J + 16*i)) =  Cij[i][j]; 
+        }
+    }
+
 
 }
