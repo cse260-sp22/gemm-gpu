@@ -31,7 +31,7 @@ int Cy = 128;
 int Cx = 128;
 int Cc = 16;
 
-int ILP = 8
+int ILP = 8;
 
 	if (N < 300) {
 		Cy = 32;
