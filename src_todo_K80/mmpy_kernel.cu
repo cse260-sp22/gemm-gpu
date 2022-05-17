@@ -14,6 +14,8 @@ using namespace std;
 #define Cx 32
 #define Cc 16
 
+#define ILP 2
+
 #define globA(x, y) __ldg(&A[x*N + y])
 #define globB(x, y) __ldg(&B[x*N + y])
 #define globC(x, y) C[x*N + y]
@@ -24,24 +26,25 @@ __global__ void matMul(int N, _DOUBLE_ * __restrict C, _DOUBLE_ * __restrict A, 
 	__shared__ _DOUBLE_ As[Cy][Cc];
 	__shared__ _DOUBLE_ Bs[Cc][Cx];
 
-	int tx = threadIdx.x;
-	int bx = 2*blockIdx.x;
+	const int tx = threadIdx.x;
+	const int bx = ILP*blockIdx.x;
 
-	int ty = threadIdx.y;
-	int by = 2*blockIdx.y;
+	const int ty = threadIdx.y;
+	const int by = ILP*blockIdx.y;
 
-	int J = bx*blockDim.x + tx;
-	int I = by*blockDim.y + ty;
+	const int J = bx*blockDim.x + tx;
+	const int I = by*blockDim.y + ty;
 
-	_DOUBLE_ Cij[4] = {0};
+	_DOUBLE_ Cij[ILP][ILP] = {0};
 
+	#pragma unroll
 	for (int kk = 0; kk < (N+Cc-1)/Cc; kk++){
-	
-		if (I       < N	&& kk*Cc + tx       < N) As[ty]		[tx] 	    = globA(I, 			(kk*Cc + tx)); 		else As[ty]		[tx] 		= 0;
-		if (I + 16  < N && kk*Cc + tx       < N) As[ty + 16][tx] 	    = globA((I + 16), 	(kk*Cc + tx)); 		else As[ty + 16][tx] 		= 0;
+		#pragma unroll
+		for (int load = 0; load < ILP; load ++){
+				if (I + 16*ILP < N && kk*Cc + tx < N) As[ty + 16*ILP][tx] = globA((I + 16*ILP), (kk*Cc + tx)); else As[ty + 16*ILP][tx] = 0;
 
-		if (kk*Cc + ty < N 		&& J < N) 		Bs[ty]		[tx] 		= globB((kk*Cc+ty), 		J); 		else Bs[ty]		[tx] 		= 0;
-		if (kk*Cc + ty < N 		&& J + 16 < N) 	Bs[ty]		[tx + 16] 	= globB((kk*Cc+ty), 		(J + 16)); 	else Bs[ty]		[tx + 16] 	= 0;
+				if (kk*Cc + ty < N && J + 16*ILP < N) Bs[ty][tx + 16*ILP] = globB((kk*Cc + ty), (J + 16*ILP)); else Bs[ty][tx + 16*ILP] = 0;
+		}	
 		
 		__syncthreads();
 
