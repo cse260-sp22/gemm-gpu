@@ -10,9 +10,9 @@ using namespace std;
 
 #include <stdio.h>
 
-#define Cy 16
-#define Cx 16
-#define Cc 16
+#define Cy 64
+#define Cx 64
+#define Cc 64
 
 #define ILP 8
 
@@ -41,15 +41,11 @@ __global__ void matMul(int N, _DOUBLE_ * __restrict C, _DOUBLE_ * __restrict A, 
 	for (int kk = 0; kk < (N+Cc-1)/Cc; kk++){
 		#pragma unroll
 		for (int load = 0; load < ILP; load ++){
-				if (I + 8*load < N && kk*Cc + tx + < N) As[ty + 8*load][tx] = globA((I + 8*load), (kk*Cc + tx)); else As[ty + 8*load][tx] = 0;
-				if (I + 8*load < N && kk*Cc + tx + 4 < N) As[ty + 8*load][tx + 4] = globA((I + 8*load), (kk*Cc + tx + 4)); else As[ty + 8*load][tx + 4] = 0;
-				if (I + 8*load < N && kk*Cc + tx + 8 < N) As[ty + 8*load][tx + 8] = globA((I + 8*load), (kk*Cc + tx + 8)); else As[ty + 8*load][tx + 8] = 0;
-				if (I + 8*load < N && kk*Cc + tx + 12 < N) As[ty + 8*load][tx + 12] = globA((I + 8*load), (kk*Cc + tx + 12)); else As[ty + 8*load][tx + 12] = 0;
+				if (I + 64*load < N && kk*Cc + tx < N) As[ty + 64*load][tx] = globA((I + 64*load), (kk*Cc + tx)); else As[ty + 64*load][tx] = 0;
+				if (I + 64*load < N && kk*Cc + tx + 64 < N) As[ty + 64*load][tx + 64] = globA((I + 64*load), (kk*Cc + tx + 64)); else As[ty + 64*load][tx + 64] = 0;
 
-				if (kk*Cc + ty < N && J + 8*load < N) Bs[ty][tx + 8*load] = globB((kk*Cc + ty), (J + 8*load)); else Bs[ty][tx + 8*load] = 0;
-				if (kk*Cc + ty + 4 < N && J + 8*load < N) Bs[ty + 4][tx + 8*load] = globB((kk*Cc + ty + 4), (J + 8*load)); else Bs[ty + 4][tx + 8*load] = 0;
-				if (kk*Cc + ty + 8 < N && J + 8*load < N) Bs[ty + 8][tx + 8*load] = globB((kk*Cc + ty + 8), (J + 8*load)); else Bs[ty + 8][tx + 8*load] = 0;
-				if (kk*Cc + ty + 12 < N && J + 8*load < N) Bs[ty + 12][tx + 8*load] = globB((kk*Cc + ty + 12), (J + 8*load)); else Bs[ty + 12][tx + 8*load] = 0;
+				if (kk*Cc + ty < N && J + 64*load < N) Bs[ty][tx + 64*load] = globB((kk*Cc + ty), (J + 64*load)); else Bs[ty][tx + 64*load] = 0;
+				if (kk*Cc + ty + 64 < N && J + 64*load < N) Bs[ty + 64][tx + 64*load] = globB((kk*Cc + ty + 64), (J + 64*load)); else Bs[ty + 64][tx + 64*load] = 0;
 		}	
 		
 		__syncthreads();
@@ -70,8 +66,8 @@ __global__ void matMul(int N, _DOUBLE_ * __restrict C, _DOUBLE_ * __restrict A, 
     for (int i = 0; i < ILP; i++){
         #pragma unroll
         for (int j = 0; j < ILP; j++){
-            if (I + 8*j < N && J + 8*i < N)
-                globC((I + 8*j), (J + 8*i)) =  Cij[i][j]; 
+            if (I + 64*j < N && J + 64*i < N)
+                globC((I + 64*j), (J + 64*i)) =  Cij[i][j]; 
         }
     }
 
