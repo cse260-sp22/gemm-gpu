@@ -18,7 +18,7 @@ using namespace std;
 #define globB(x, y) __ldg(&B[x*N + y])
 #define globC(x, y) C[x*N + y]
 
-__global__ void matMul(int N, _DOUBLE_ * __restrict C, _DOUBLE_ * __ restrict A, _DOUBLE_ * __ restrict B){
+__global__ void matMul(int N, _DOUBLE_ * __restrict C, _DOUBLE_ * __restrict A, _DOUBLE_ * __restrict B){
 
 	//local shared storage
 	__shared__ _DOUBLE_ As[Cy][Cc];
@@ -45,7 +45,7 @@ __global__ void matMul(int N, _DOUBLE_ * __restrict C, _DOUBLE_ * __ restrict A,
 		
 		__syncthreads();
 
-		for (int k = 0; k < TW; k++){
+		for (int k = 0; k < Cc; k++){
 
 			Cij[0] += As[ty]		[k] * Bs[k][tx];
 			Cij[1] += As[ty + 16]	[k] * Bs[k][tx];
