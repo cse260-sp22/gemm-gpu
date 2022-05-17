@@ -10,7 +10,6 @@ using namespace std;
 
 #include <stdio.h>
 
-<<<<<<< HEAD
 #define Cy 16
 #define Cx 16
 #define Cc 16
@@ -42,11 +41,9 @@ __global__ void matMul(int N, _DOUBLE_ * __restrict C, _DOUBLE_ * __restrict A, 
 	for (int kk = 0; kk < (N+Cc-1)/Cc; kk++){
 		#pragma unroll
 		for (int load = 0; load < ILP; load ++){
-				if (I + 8*load < N && kk*Cc + tx < N) As[ty + 8*load][tx] = globA((I + 8*load), (kk*Cc + tx)); else As[ty + 8*load][tx] = 0;
-				if (I + 8*load < N && kk*Cc + tx + 8 < N) As[ty + 8*load][tx + 8] = globA((I + 8*load), (kk*Cc + tx + 8)); else As[ty + 8*load][tx + 8] = 0;
+				if (I + 32*load < N && kk*Cc + tx < N) As[ty + 32*load][tx] = globA((I + 32*load), (kk*Cc + tx)); else As[ty + 32*load][tx] = 0;
 
-				if (kk*Cc + ty < N && J + 8*load < N) Bs[ty][tx + 8*load] = globB((kk*Cc + ty), (J + 8*load)); else Bs[ty][tx + 8*load] = 0;
-				if (kk*Cc + ty + 8 < N && J + 8*load < N) Bs[ty + 8][tx + 8*load] = globB((kk*Cc + ty + 8), (J + 8*load)); else Bs[ty + 8][tx + 8*load] = 0;
+				if (kk*Cc + ty < N && J + 32*load < N) Bs[ty][tx + 32*load] = globB((kk*Cc + ty), (J + 32*load)); else Bs[ty][tx + 32*load] = 0;
 		}	
 		
 		__syncthreads();
@@ -56,7 +53,7 @@ __global__ void matMul(int N, _DOUBLE_ * __restrict C, _DOUBLE_ * __restrict A, 
             for (int i = 0; i < ILP; i++){
                 #pragma unroll
                 for (int j = 0; j < ILP; j++){
-                    Cij[i][j] += As[ty + 8*j][k]*Bs[k][tx + 8*i]; 
+                    Cij[i][j] += As[ty + 32*j][k]*Bs[k][tx + 32*i]; 
                 }
             }
         }
