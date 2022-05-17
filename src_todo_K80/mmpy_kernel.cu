@@ -67,7 +67,7 @@ __global__ void matMul_ilp(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 
 }
 
-__global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
+__global__ void matMul_old(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 
 	//local shared storage
 	__shared__ double As[128][17];
@@ -138,6 +138,84 @@ __global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 				globC((by + warp_id_y + warp_thd_id_y + str_y + 32), (bx + warp_id_x + warp_thd_id_x + str_x)) 		= Cr[str_y + 4]	[str_x];	
 			if ((by + warp_id_y + warp_thd_id_y + str_y + 32) < N && (bx + warp_id_x + warp_thd_id_x + str_x + 16) < N)
 				globC((by + warp_id_y + warp_thd_id_y + str_y + 32), (bx + warp_id_x + warp_thd_id_x + str_x + 16)) = Cr[str_y + 4]	[str_x + 4];	
+		}
+	}
+}
+
+__global__ void matMul(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
+
+	//local shared storage
+	__shared__ double As[64][65];
+	__shared__ double Bs[64][64];
+
+	_DOUBLE_ Ar[4] 		= {0};
+	_DOUBLE_ Br[4] 		= {0};
+	_DOUBLE_ Cr[4][4] 	= {0};
+
+	const int tx = threadIdx.x;
+	const int bx = blockIdx.x*64;
+
+	const int ty = threadIdx.y;
+	const int by = blockIdx.y*64;
+
+	const int thd_id = ty*16 + tx;
+
+	const int warp_thd_id = thd_id % 32;
+	const int warp_thd_id_x = 2*(warp_thd_id % 4);
+	const int warp_thd_id_y = 2*(warp_thd_id / 4);
+
+	const int warp_id = thd_id / 32;
+	const int warp_id_x = 16*(warp_id % 4);
+	const int warp_id_y = 32*(warp_id / 4);
+
+	#pragma unroll
+	for (int tl_id = 0; tl_id < N; tl_id += 64){
+		
+		#pragma unroll
+		for (int num_ld = 0; num_ld < 64; num_ld += 16){
+			if (by + ty + num_ld < N && tx + tl_id < N) As[ty + num_ld][tx] = globA((by + ty + num_ld), (tx + tl_id)); else As[ty + num_ld][tx] = 0;
+			if (ty + tl_id < N && bx + tx + num_ld < N) Bs[ty][tx + num_ld] = globB((ty + tl_id), (bx + tx + num_ld)); else Bs[ty][tx + num_ld] = 0;
+		}
+		__syncthreads();
+
+		#pragma unroll
+		for (int prod = 0; prod < 64; prod++){
+			#pragma unroll
+			for (int ilp = 0; ilp < 2; ilp++){
+				Ar[ilp] 		= As[warp_id_y + warp_thd_id_y + ilp]		[prod];
+				Ar[ilp + 2] 	= As[warp_id_y + warp_thd_id_y + ilp + 16]	[prod];
+
+				Br[ilp]		= Bs[prod][warp_id_x + warp_thd_id_x + ilp];
+				Br[ilp + 2]	= Bs[prod][warp_id_x + warp_thd_id_x + ilp + 8];
+			
+			}
+
+			#pragma unroll
+			for (int ilpy = 0; ilpy < 4; ilpy++){
+				#pragma unroll
+				for (int ilpx = 0; ilpx < 4; ilpx++){
+					Cr[ilpy][ilpx] += Ar[ilpy] * Br[ilpx];
+				}
+			}
+			__syncthreads();
+		}
+	}
+
+	#pragma unroll
+	for (int str_y = 0; str_y < 2; str_y++){
+		#pragma unroll
+		for (int str_x = 0; str_x < 2; str_x++){
+			if ((by + warp_id_y + warp_thd_id_y + str_y) < N && (bx + warp_id_x + warp_thd_id_x + str_x) < N)
+				globC((by + warp_id_y + warp_thd_id_y + str_y), (bx + warp_id_x + warp_thd_id_x + str_x)) 			= Cr[str_y]		[str_x];	
+
+			if ((by + warp_id_y + warp_thd_id_y + str_y) < N && (bx + warp_id_x + warp_thd_id_x + str_x + 8) < N)
+				globC((by + warp_id_y + warp_thd_id_y + str_y), (bx + warp_id_x + warp_thd_id_x + str_x + 8)) 		= Cr[str_y]		[str_x + 2];	
+
+			if ((by + warp_id_y + warp_thd_id_y + str_y + 16) < N && (bx + warp_id_x + warp_thd_id_x + str_x) < N)
+				globC((by + warp_id_y + warp_thd_id_y + str_y + 16), (bx + warp_id_x + warp_thd_id_x + str_x)) 		= Cr[str_y + 2]	[str_x];	
+
+			if ((by + warp_id_y + warp_thd_id_y + str_y + 16) < N && (bx + warp_id_x + warp_thd_id_x + str_x + 8) < N)
+				globC((by + warp_id_y + warp_thd_id_y + str_y + 16), (bx + warp_id_x + warp_thd_id_x + str_x + 8)) = Cr[str_y + 2]	[str_x + 2];	
 		}
 	}
 }
