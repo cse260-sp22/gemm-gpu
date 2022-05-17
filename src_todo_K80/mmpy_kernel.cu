@@ -17,7 +17,7 @@ using namespace std;
 #define TW 32
 #define Cy 32
 #define Cx 32
-#define Cc 32
+#define Cc 16
 
 __global__ void matMul_ilp(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 
@@ -50,7 +50,7 @@ __global__ void matMul_ilp(int N, _DOUBLE_ *C, _DOUBLE_ *A, _DOUBLE_ *B){
 		
 		__syncthreads();
 
-		for (int k = 0; k < TW; k++){
+		for (int k = 0; k < Cc; k++){
 
 			Cij[0] += As[ty]		[k] * Bs[k][tx];
 			Cij[1] += As[ty + 16]	[k] * Bs[k][tx];
