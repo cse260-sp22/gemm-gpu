@@ -46,7 +46,6 @@ __global__ void matMul(int N, _DOUBLE_ * __restrict C, _DOUBLE_ * __restrict A, 
 
 				if (kk*Cc + ty < N && J + 8*load < N) Bs[ty][tx + 8*load] = globB((kk*Cc + ty), (J + 8*load)); else Bs[ty][tx + 8*load] = 0;
 				if (kk*Cc + ty + 8 < N && J + 8*load < N) Bs[ty + 8][tx + 8*load] = globB((kk*Cc + ty + 8), (J + 8*load)); else Bs[ty + 8][tx + 8*load] = 0;
-		}	
 		
 		__syncthreads();
         #pragma unroll
@@ -66,6 +65,7 @@ __global__ void matMul(int N, _DOUBLE_ * __restrict C, _DOUBLE_ * __restrict A, 
     for (int i = 0; i < ILP; i++){
         #pragma unroll
         for (int j = 0; j < ILP; j++){
+<<<<<<< HEAD
             if (I + 8*j < N && J + 8*i < N)
                 globC((I + 8*j), (J + 8*i)) =  Cij[i][j]; 
         }
