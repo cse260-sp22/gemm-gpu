@@ -10,17 +10,36 @@ using namespace std;
 
 #include <stdio.h>
 
-#define Cy 64
-#define Cx 64
-#define Cc 32
 
-#define ILP 4
+// #define Cy 128
+// #define Cx 128
+// #define Cc 16
+
+// #define ILP 8
 
 #define globA(x, y) __ldg(&A[x*N + y])
 #define globB(x, y) __ldg(&B[x*N + y])
 #define globC(x, y) C[x*N + y]
 
 __global__ void matMul(int N, _DOUBLE_ * __restrict C, _DOUBLE_ * __restrict A, _DOUBLE_ * __restrict B){
+// 	ILP 2x2, 32, 32, 32:
+// 256 - 400
+// 512 - 424
+// 1024 - 440
+// 2048 - 442.9
+int Cy = 128;
+int Cx = 128;
+int Cc = 16;
+
+int ILP = 8
+
+	if (N < 300) {
+		Cy = 32;
+Cx = 32;
+Cc = 32;
+
+ILP = 2;
+	}
 
 	//local shared storage
 	__shared__ _DOUBLE_ As[Cy][Cc];
