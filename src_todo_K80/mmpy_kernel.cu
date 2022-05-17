@@ -10,11 +10,11 @@ using namespace std;
 
 #include <stdio.h>
 
-#define Cy 32
-#define Cx 32
+#define Cy 64
+#define Cx 64
 #define Cc 16
 
-#define ILP 2
+#define ILP 4
 
 #define globA(x, y) __ldg(&A[x*N + y])
 #define globB(x, y) __ldg(&B[x*N + y])
