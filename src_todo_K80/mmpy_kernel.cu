@@ -41,8 +41,10 @@ __global__ void matMul(int N, _DOUBLE_ * __restrict C, _DOUBLE_ * __restrict A, 
 		#pragma unroll
 		for (int load = 0; load < ILP; load ++){
 				if (I + 16*load < N && kk*Cc + tx < N) As[ty + 16*load][tx] = globA((I + 16*load), (kk*Cc + tx)); else As[ty + 16*load][tx] = 0;
+				if (I + 16*load < N && kk*Cc + tx + 16 < N) As[ty + 16*load][tx + 16] = globA((I + 16*load), (kk*Cc + tx + 16)); else As[ty + 16*load][tx + 16] = 0;
 
 				if (kk*Cc + ty < N && J + 16*load < N) Bs[ty][tx + 16*load] = globB((kk*Cc + ty), (J + 16*load)); else Bs[ty][tx + 16*load] = 0;
+				if (kk*Cc + ty + 16 < N && J + 16*load < N) Bs[ty + 16][tx + 16*load] = globB((kk*Cc + ty + 16), (J + 16*load)); else Bs[ty + 16][tx + 16*load] = 0;
 		}	
 		
 		__syncthreads();
