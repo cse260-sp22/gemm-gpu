@@ -12,7 +12,7 @@ using namespace std;
 
 #define Cy 32
 #define Cx 32
-#define Cc 32
+#define Cc 16
 
 #define globA(x, y) __ldg(&A[x*N + y])
 #define globB(x, y) __ldg(&B[x*N + y])
