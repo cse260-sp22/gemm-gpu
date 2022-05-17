@@ -10,11 +10,11 @@ using namespace std;
 
 #include <stdio.h>
 
-#define Cy 128
-#define Cx 128
+#define Cy 16
+#define Cx 16
 #define Cc 16
 
-#define ILP 8
+#define ILP 2
 
 #define globA(x, y) __ldg(&A[x*N + y])
 #define globB(x, y) __ldg(&B[x*N + y])
@@ -41,9 +41,11 @@ __global__ void matMul(int N, _DOUBLE_ * __restrict C, _DOUBLE_ * __restrict A, 
 	for (int kk = 0; kk < (N+Cc-1)/Cc; kk++){
 		#pragma unroll
 		for (int load = 0; load < ILP; load ++){
-				if (I + 16*load < N && kk*Cc + tx < N) As[ty + 16*load][tx] = globA((I + 16*load), (kk*Cc + tx)); else As[ty + 16*load][tx] = 0;
+				if (I + 8*load < N && kk*Cc + tx < N) As[ty + 8*load][tx] = globA((I + 8*load), (kk*Cc + tx)); else As[ty + 8*load][tx] = 0;
+				if (I + 8*load < N && kk*Cc + tx + 8 < N) As[ty + 8*load][tx + 8] = globA((I + 8*load), (kk*Cc + tx + 8)); else As[ty + 8*load][tx + 8] = 0;
 
-				if (kk*Cc + ty < N && J + 16*load < N) Bs[ty][tx + 16*load] = globB((kk*Cc + ty), (J + 16*load)); else Bs[ty][tx + 16*load] = 0;
+				if (kk*Cc + ty < N && J + 8*load < N) Bs[ty][tx + 8*load] = globB((kk*Cc + ty), (J + 8*load)); else Bs[ty][tx + 8*load] = 0;
+				if (kk*Cc + ty + 8 < N && J + 8*load < N) Bs[ty + 8][tx + 8*load] = globB((kk*Cc + ty + 8), (J + 8*load)); else Bs[ty + 8][tx + 8*load] = 0;
 		}	
 		
 		__syncthreads();
@@ -53,7 +55,7 @@ __global__ void matMul(int N, _DOUBLE_ * __restrict C, _DOUBLE_ * __restrict A, 
             for (int i = 0; i < ILP; i++){
                 #pragma unroll
                 for (int j = 0; j < ILP; j++){
-                    Cij[i][j] += As[ty + 16*j][k]*Bs[k][tx + 16*i]; 
+                    Cij[i][j] += As[ty + 8*j][k]*Bs[k][tx + 8*i]; 
                 }
             }
         }
@@ -64,8 +66,8 @@ __global__ void matMul(int N, _DOUBLE_ * __restrict C, _DOUBLE_ * __restrict A, 
     for (int i = 0; i < ILP; i++){
         #pragma unroll
         for (int j = 0; j < ILP; j++){
-            if (I + 16*j < N && J + 16*i < N)
-            globC((I + 16*j), (J + 16*i)) =  Cij[i][j]; 
+            if (I + 8*j < N && J + 8*i < N)
+                globC((I + 8*j), (J + 8*i)) =  Cij[i][j]; 
         }
     }
 
