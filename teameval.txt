@@ -1,41 +1,57 @@
-                       CSE 260, Parallel Computation
-                                (Spring 2022)
-                Department of Computer Science and Engineering 	
-                     University of California, San Diego 	
+                    CSE 260, Parallel Computation
+                            (Spring 2022)
+           Department of Computer Science and Engineering
+                 University of California, San Diego
 
 
 		Team Self Evaluation Form, Assignment #2
 
-Each team must submit one copy of this self evaluation form. 
+Each team must submit one copy of this self evaluation form.
 The members of each team should discuss how they
 worked together and what to write for the evaluation.
+If you worked alone leave column B blank
 
 (1) List the names of your team members:
 
-A:
+A: Brandon Saldanha
 
- 
-B:
 
- 
- 
+B: Raghav Prasad
+
+
+
 (2) Estimate how much time each team member devoted to this project, in HOURS.
 
   	                        A 	       B
-meetings 	  	  	 
-coding 	  	  	 
-writeup 	  	  	 
-planning (alone) 	  	  	 
-total (including meetings) 	  	  	 
+meetings 	  	  	8              8
+coding 	  	  	        25             25
+writeup 	  	  	11             11
+planning (alone) 	  	5              5
+total (including meetings) 	49             49
 
 
-(3) Describe 
-  (a) what the major responsibilities of each team member were;
-  (b) whether or not you completed the assignment;
-  (c) the major strengths and weaknesses in your team, e.g. how
-      your team worked together;
-  (d) the lessons learned from these events;
-  (e) whether and how you plan to change the way your work together and
-  (f) anything else that comes to mind.
+(3) Discuss the following.
+(a) If you worked in a team, what were the major responsibilities
+    of each team member?
+Brandon: Cutlass, ILP
+Raghav: Shared Memory, ILP, T4
 
+(b) Did you complete the assignment?
+Yes
 
+(c) What were your major strengths and weaknesses in doing this
+    assignment (individually or in a team)?
+    If in a team, also discuss how your team worked together.
+Raghav has a strong background in programming and software and was ably complemented by Brandon whose strength lies in hardware and computer architecture.
+
+(d) What lessons did you learn from these events.
+Time management is harder than it seems
+
+(e) If in a team, whether and how you plan to change the way your work together.
+Start working earlier and plan ahead
+
+(f) Anything else that comes to mind.
+Not really
+
+(g) What suggestions do you have to improve this assignment?
+-
