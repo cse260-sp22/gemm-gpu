@@ -14,7 +14,7 @@ using namespace std;
 #define globB(x, y) __ldg(&B[x*N + y])
 #define globC(x, y) C[x*N + y]
 
-__global__ void matMul_old(const int N, _DOUBLE_ * __restrict C, _DOUBLE_ * __restrict A, _DOUBLE_ * __restrict B){
+__global__ void matMul(const int N, _DOUBLE_ * __restrict C, _DOUBLE_ * __restrict A, _DOUBLE_ * __restrict B){
 
 	//local shared storage
 	__shared__ _DOUBLE_ As[128][17];
